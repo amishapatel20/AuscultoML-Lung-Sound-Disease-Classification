@@ -1,0 +1,15 @@
+# Python dependencies for the Disease_predictor project
+# ----------------------------------------------------
+# Below are common libraries for data processing and modeling.
+# They can be extended or trimmed later as needed.
+
+numpy
+pandas
+scikit-learn
+matplotlib
+seaborn
+librosa
+fastapi
+uvicorn
+joblib
+python-multipart

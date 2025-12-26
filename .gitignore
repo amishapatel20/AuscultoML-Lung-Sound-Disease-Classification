@@ -1,0 +1,6 @@
+venv/
+__pycache__/
+*.dll
+*.zip
+*.pkl
+*.h5
