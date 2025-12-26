@@ -1,18 +1,57 @@
-# Lung Sound Disease Classifier – System Design and Documentation
+# Lung Sound Disease Classifier – Research Summary and System Design
 
-## 1. Project Overview
+This repository implements a complete, end‑to‑end pipeline for **automatic classification of lung sounds** (Normal, Wheeze, Fine Crackle, etc.) from auscultation audio. It includes:
 
-This project builds a complete pipeline to classify lung sounds (e.g. Normal, Wheeze, Fine Crackle) from audio recordings. The pipeline covers:
+- Data ingestion and cleaning from a clinical lung‑sound dataset
+- Event‑level clipping of long recordings into labeled segments
+- FFT‑based band‑energy feature engineering in a medically relevant band (100–2000 Hz)
+- Supervised learning with a Random Forest classifier
+- Model persistence (`lung_model.joblib`) and a FastAPI service for real‑time inference
 
-- Local dataset handling 
-- Extraction and organization of JSON annotations and WAV audio files
-- Automatic clipping of recordings into labeled segments based on event annotations
-- Feature extraction using FFT-based band energy in a medically relevant frequency band
-- Training and evaluating a machine-learning classifier (Random Forest)
-- Saving the trained model to disk
-- Serving the model via a FastAPI web API for real-time prediction on uploaded WAV files
+The goal is to explore whether simple, interpretable frequency‑domain features can separate common lung sound patterns and to build a minimal, deployable prototype suitable for further research.
 
-The main training logic lives in the Jupyter notebook [Model.ipynb](Model.ipynb), while deployment/inference logic is provided by Python scripts (e.g. `lung_pipeline.py`, `main.py`) and the dependency list is in [requirements.txt](requirements.txt).
+---
+
+## 1. Key Outcomes (At a Glance)
+
+### 1.1 Classification Performance (segment‑level)
+
+| Metric                          | Value              |
+|---------------------------------|--------------------|
+| Train accuracy                  | **1.00**           |
+| Test accuracy                   | **0.91**           |
+| Number of test segments         | 35                 |
+| Feature type                    | Single band energy |
+| Frequency band used             | 100–2000 Hz        |
+
+### 1.2 Per‑Class Test Performance
+
+| Class         | Precision | Recall | F1‑score | Support |
+|---------------|-----------|--------|----------|---------|
+| Fine Crackle  | 0.67      | 0.50   | 0.57     | 4       |
+| Normal        | 0.94      | 0.97   | 0.95     | 30      |
+| Wheeze        | 1.00      | 1.00   | 1.00     | 1       |
+| **Overall**   | **0.91**  | **0.91** | **0.91** | **35** |
+
+These numbers come directly from the training notebook [Model.ipynb](Model.ipynb), using the internal `train_test_split` on the engineered segment‑level dataset (`features_all`).
+
+### 1.3 Dataset Label Distribution (subset used)
+
+From a scan of 200 JSON annotation files in the dataset, the following label counts were observed:
+
+| Label           | Count |
+|-----------------|-------|
+| Normal          | 628   |
+| Fine Crackle    | 83    |
+| Wheeze          | 39    |
+| DAS             | 31    |
+| CAS             | 12    |
+| Poor Quality    | 17    |
+| CAS & DAS       | 4     |
+| Coarse Crackle  | 2     |
+| Wheeze+Crackle  | 1     |
+
+This imbalance (e.g. far more Normal than Fine Crackle/Wheeze) is important context when interpreting the metrics above and motivates future work on class‑imbalance handling.
 
 ---
 
@@ -24,7 +63,7 @@ Typical layout after running the notebook once:
   - Dataset ZIP handling and extraction
   - Directory inspection and validation
   - Clipping of recordings into labeled segments
-  - FFT-based feature extraction
+  - FFT‑based feature extraction
   - Model training, evaluation, and saving
 - **requirements.txt** – List of Python dependencies needed for the notebook and API.
 - **lung_model.joblib** – Saved model artifact (RandomForestClassifier + LabelEncoder) produced by the notebook.
@@ -49,7 +88,19 @@ Typical layout after running the notebook once:
 
 ## 3. End-to-End System Design
 
-### 3.1 High-Level Data Flow
+### 3.1 Short Interview Answer
+
+If an interviewer asks, **"What is the system design of your project?"**, you can summarize it as:
+
+- A **data processing pipeline** that ingests a lung-sound dataset (WAV + JSON), validates the folder structure, and clips long recordings into **short, labeled audio segments** based on event annotations.
+- A **feature-extraction component** that converts each segment into a simple, interpretable **FFT band‑energy feature** in the 100–2000 Hz band and stores everything in a pandas DataFrame.
+- A **model-training module** that uses this feature table to train and evaluate a **RandomForest classifier**, reports metrics (accuracy, confusion matrix, per‑class precision/recall/F1), and saves the trained model + label encoder as `lung_model.joblib`.
+- An **inference pipeline** (lung_pipeline.py) that loads the saved model, computes the same band‑energy feature for any new WAV file, and outputs the predicted lung sound class.
+- A **FastAPI web service** (main.py) that exposes a `/predict` endpoint so external clients or a UI can upload audio and receive real‑time predictions.
+
+In short: it is a modular system with clear stages (data ingestion → segmentation → feature engineering → model training → persisted model → web API) connected by simple, well‑defined interfaces (files, DataFrames, and function calls).
+
+### 3.2 High-Level Data Flow
 
 1. **Raw Data (ZIP)**  
    A ZIP file (e.g. `Lung_classification.zip`) contains the dataset provided by the authors.
@@ -343,17 +394,5 @@ After this, the trained model is stored on disk and is ready for deployment.
 
 ---
 
-## 7. Possible Extensions
 
-- Use richer feature sets: MFCCs, spectral centroid, bandwidth, etc.
-- Incorporate multiple frequency bands as multiple features instead of a single band-energy feature.
-- Try more advanced models (e.g. gradient boosting, neural networks) once feature space is expanded.
-- Add a simple front-end web page that:
-  - Lets a user upload a lung sound recording.
-  - Calls the FastAPI `/predict` endpoint.
-  - Displays the predicted class clearly.
-- Perform cross-validation and hyperparameter tuning for the Random Forest to improve performance.
 
----
-
-This README is intended to provide a detailed, high-level explanation of every component: libraries used, model architecture, and full system design from raw ZIP to deployed web API. Use it as a basis for reports, presentations, or documentation for your professor.
