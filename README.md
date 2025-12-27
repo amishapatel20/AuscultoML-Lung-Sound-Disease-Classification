@@ -1,5 +1,5 @@
 # Lung Sound Disease Classifier – Research Summary and System Design
-
+#Dataset  link --- https://drive.google.com/file/d/1TmrdhbssDlx0NOeb8vH08RvTuJK-ncoj/view?usp=sharing
 This repository implements a complete, end‑to‑end pipeline for **automatic classification of lung sounds** (Normal, Wheeze, Fine Crackle, etc.) from auscultation audio. It includes:
 
 - Data ingestion and cleaning from a clinical lung‑sound dataset
